@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Система отгрузок</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#f0efe8;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;
+  --border:#e0dfd8;--border2:#c8c7c0;
+  --green:#178A5A;--gbg:#EAF3DE;--gtx:#3B6D11;
+  --red:#E24B4A;--rbg:#FCEBEB;--rtx:#A32D2D;
+  --blue:#185FA5;--bbg:#E6F1FB;
+  --amber:#BA7517;--abg:#FAEEDA;--atx:#854F0B;
+  --purple:#534AB7;--pdark:#3C3489;--pbg:#EEEDFE;--ptx:#3C3489;
+  --tbg:#E1F5EE;--ttx:#0F6E56;
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;color:var(--text);background:var(--bg3);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;background:var(--bg);min-height:100vh;box-shadow:0 0 0 0.5px var(--border)}
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--pdark);flex-wrap:wrap}
+.title{font-size:18px;font-weight:700;color:#fff;flex:1}
+.srow{display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.75)}
+.dot{width:8px;height:8px;border-radius:50%}
+.dok{background:#7ee8a2}.derr{background:#f09595}.dspin{background:#b5d4f4;animation:bl 1s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.tstat{background:rgba(255,255,255,.12);border-radius:var(--r);padding:5px 12px;text-align:center}
+.tsv{font-size:15px;font-weight:700;color:#fff}.tsl{font-size:10px;color:rgba(255,255,255,.7)}
+.danger .tsv{color:#ffb3b3}
+.tbtn{padding:4px 12px;font-size:12px;border:0.5px solid rgba(255,255,255,.3);border-radius:var(--r);cursor:pointer;background:rgba(255,255,255,.15);color:#fff;white-space:nowrap}
+.tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg2);padding:0 16px;overflow-x:auto}
+.tab{padding:11px 18px;cursor:pointer;font-size:14px;border-bottom:2px solid transparent;color:var(--text2);white-space:nowrap;user-select:none}
+.tab.active{color:var(--pdark);border-bottom-color:var(--pdark);font-weight:600}
+.page{display:none;padding:16px;gap:14px;flex-direction:column}
+.page.active{display:flex}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px 20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.g2,.g3{grid-template-columns:1fr}}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:3px}
+input,select{width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+input:focus,select:focus{border-color:var(--purple)}
+.btn{padding:8px 16px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:var(--bg);color:var(--text);white-space:nowrap;font-family:inherit}
+.btn:hover{background:var(--bg2)}.btn:active{transform:scale(.98)}
+.btnp{background:var(--purple);color:#fff;border-color:var(--purple)}.btnp:hover{background:var(--pdark)}
+.btnd{background:var(--red);color:#fff;border-color:var(--red)}
+.btnw{background:var(--amber);color:#fff;border-color:var(--amber)}
+.sm{padding:3px 9px;font-size:11px}
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+.br{background:var(--rbg);color:var(--rtx)}.bg{background:var(--gbg);color:var(--gtx)}
+.ba{background:var(--abg);color:var(--atx)}.bb{background:var(--bbg);color:var(--blue)}
+.bgr{background:var(--bg3);color:var(--text2)}.bp{background:var(--pbg);color:var(--ptx)}
+.bt{background:var(--tbg);color:var(--ttx)}
+.stit{font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:500;color:var(--text2);text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border);white-space:nowrap}
+td{padding:7px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.ship{border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.shh{padding:8px 12px;background:var(--bg2);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.shb{padding:4px 12px 8px}
+.slot{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.slot:last-child{border-bottom:none}
+.sn{flex:1;font-size:13px;min-width:0}
+.trh{font-size:11px;color:var(--text2);padding:8px 0 3px;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stat{background:var(--bg2);border-radius:var(--r);padding:10px 12px}
+.sv{font-size:22px;font-weight:600}.sl{font-size:11px;color:var(--text2);margin-top:2px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal{background:var(--bg);border-radius:var(--rl);padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.mbt{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.info{background:var(--bbg);border:0.5px solid #B5D4F4;border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--blue)}
+.errb{background:var(--rbg);border:0.5px solid #F7C1C1;border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--rtx)}
+.pri{display:flex;align-items:center;gap:8px;padding:7px 8px;border:0.5px solid var(--border);border-radius:var(--r);cursor:pointer;margin-bottom:4px}
+.pri:hover{background:var(--bg2)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mhdr{font-size:13px;font-weight:600;color:var(--pdark);padding:12px 0 6px;border-bottom:2px solid var(--pbg);margin-bottom:8px;text-transform:capitalize}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="title">Система отгрузок</div>
+    <div class="tstat danger" id="tb-od" style="display:none"><div class="tsv" id="tb-od-v">0</div><div class="tsl">Просрочек</div></div>
+    <div class="tstat" id="tb-nr" style="display:none"><div class="tsv" id="tb-nr-v">—</div><div class="tsl">Ближайший дедлайн</div></div>
+    <div class="srow"><div class="dot dspin" id="sdot"></div><span id="stxt">Загрузка...</span></div>
+    <button class="tbtn" onclick="loadData()">↻</button>
+    <button class="tbtn" onclick="exportB()">⬇ Бэкап</button>
+    <button class="tbtn" onclick="document.getElementById('imp').click()">⬆ Восстановить</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importB(event)"/>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="showPage('contracts')">Договоры</div>
+    <div class="tab" onclick="showPage('schedule')">График отгрузок</div>
+    <div class="tab" onclick="showPage('week')">Неделя</div>
+    <div class="tab" onclick="showPage('analytics')">Сводка</div>
+    <div class="tab" id="tab-inact" onclick="showPage('inactive')">Не в работе</div>
+  </div>
+
+  <!-- ДОГОВОРЫ -->
+  <div class="page active" id="page-contracts">
+    <div class="card">
+      <div class="stit">Добавить договор</div>
+      <div class="g3" style="margin-bottom:10px">
+        <div><label>Фамилия И.О.</label><input id="fn" placeholder="Иванов И.И."/></div>
+        <div><label>№ договора</label><input id="fnum" placeholder="2024-001"/></div>
+        <div><label>Фабрика</label><select id="ffab"><option>М</option><option>З</option><option>СП</option></select></div>
+      </div>
+      <div class="g3" style="margin-bottom:10px">
+        <div><label>Дата договора</label><input type="date" id="fd" onchange="updPrev()"/></div>
+        <div><label>Доп. соглашение</label><select id="fadd" onchange="togAdd()"><option value="">Нет</option><option value="y">Есть</option></select></div>
+        <div id="addw" style="display:none"><label>Дата доп. соглашения</label><input type="date" id="fadd2" onchange="updPrev()"/></div>
+      </div>
+      <div id="prev" style="margin-bottom:10px"></div>
+      <div class="row">
+        <input id="fnote" placeholder="Примечание (необязательно)" style="flex:1"/>
+        <button class="btn btnp" onclick="addC()">+ Добавить</button>
+      </div>
+      <div id="cerr" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">
+        <div class="stit" style="margin:0;flex:1">Список договоров</div>
+        <select id="ff" onchange="renderC()" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)">
+          <option value="">Все фабрики</option><option>М</option><option>З</option><option>СП</option>
+        </select>
+        <select id="fst" onchange="renderC()" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)">
+          <option value="">Все статусы</option><option value="overdue">Просрочка</option><option value="pending">Ожидание</option><option value="scheduled">В графике</option><option value="done">Отгружен</option>
+        </select>
+      </div>
+      <div id="ctbl"><div style="text-align:center;padding:2rem;color:var(--text2)">Загрузка...</div></div>
+    </div>
+  </div>
+
+  <!-- ГРАФИК -->
+  <div class="page" id="page-schedule">
+    <div class="row">
+      <div style="font-size:15px;font-weight:600;flex:1">График отгрузок</div>
+      <select id="sf" onchange="renderS()" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)">
+        <option value="">Все фабрики</option><option>М</option><option>З</option><option>СП</option>
+      </select>
+      <button class="btn btnp" onclick="addNewOnly()" title="Добавить только новые договоры в конец очереди">+ Добавить новые</button>
+      <button class="btn" style="background:var(--rbg);color:var(--rtx);border-color:var(--rtx)" onclick="buildSched()" title="Полный пересбор всех незафиксированных">↺ Пересобрать всё</button>
+    </div>
+    <div class="info">
+      <strong>+ Добавить новые</strong> — добавляет только новые договоры, не трогает уже расставленных.<br>
+      <strong>↺ Пересобрать всё</strong> — сбрасывает и перераспределяет всех (кроме 🔒 зафиксированных).
+    </div>
+    <div id="sched"></div>
+  </div>
+
+  <!-- ВКЛАДКА НЕДЕЛЯ -->
+  <div class="page" id="page-week">
+    <div class="row" style="margin-bottom:4px">
+      <div style="font-size:15px;font-weight:600;flex:1">Машины на неделю</div>
+      <select id="wk-sel" onchange="renderW()" style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text)">
+        <option value="cur">Эта неделя</option>
+        <option value="next">Следующая неделя</option>
+      </select>
+    </div>
+    <div class="info" style="font-size:12px">Вкладка показывает все машины всех фабрик за выбранную неделю. Здесь можно перемещать клиентов между машинами и фабриками.</div>
+    <div id="week-content"></div>
+  </div>
+
+  <!-- СВОДКА -->
+  <div class="page" id="page-analytics">
+    <div class="g4" id="stats"></div>
+    <div class="g2"><div class="card" id="odlist"></div><div class="card" id="fabsum"></div></div>
+    <div class="card" id="upc"></div>
+  </div>
+
+  <!-- НЕ В РАБОТЕ -->
+  <div class="page" id="page-inactive">
+    <div class="card">
+      <div class="stit" style="color:var(--text2)">Договоры «Не в работе» — не участвуют в расписании</div>
+      <div id="itbl"></div>
+    </div>
+  </div>
+</div>
+<div id="modal"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,doc,getDoc,setDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const app=initializeApp({apiKey:'AIzaSyCCCPjyEtxBP-zJJQpVp-G-YEsetgWecqc',authDomain:'mebel-otgruzki.firebaseapp.com',projectId:'mebel-otgruzki',appId:'1:1065781865414:web:e2722971e28267aa2fa0c7'});
+const db=getFirestore(app);
+
+const IDEAL=70,DL=90;
+const FAB={'М':{t:2,n:4},'З':{t:1,n:6},'СП':{t:2,n:4}};
+let C=[],sTimer=null;
+
+// ── FIREBASE ──
+async function loadData(){
+  ss('spin','Загрузка...');
+  try{
+    const snap=await getDoc(doc(db,'furniture','main'));
+    C=snap.exists()?(snap.data().contracts||[]):[];
+    ss('ok','Синхронизировано · '+tn());renderAll();
+  }catch(e){ss('err','Ошибка: '+e.message);}
+}
+function scheduleSave(){if(sTimer)clearTimeout(sTimer);ss('spin','Сохранение...');sTimer=setTimeout(saveNow,1500);}
+async function saveNow(){
+  try{await setDoc(doc(db,'furniture','main'),{contracts:C,savedAt:new Date().toISOString()});ss('ok','Сохранено · '+tn());}
+  catch(e){ss('err','Ошибка сохранения');}
+}
+function ss(s,m){
+  const d=document.getElementById('sdot'),t=document.getElementById('stxt');if(!d)return;
+  d.className='dot';d.classList.add(s==='ok'?'dok':s==='err'?'derr':'dspin');t.textContent=m;
+}
+function tn(){return new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+
+// ── DATES (BY holidays) ──
+function hols(y){return new Set([`${y}-01-01`,`${y}-01-07`,`${y}-03-08`,`${y}-05-01`,`${y}-05-09`,`${y}-07-03`,`${y}-11-07`,`${y}-12-25`]);}
+function isWD(d){if(!d.getDay()||d.getDay()===6)return false;return!hols(d.getFullYear()).has(d.toISOString().slice(0,10));}
+function addWD(date,days){let d=new Date(date),n=0;while(n<days){d.setDate(d.getDate()+1);if(isWD(d))n++;}return d;}
+function wdDiff(a,b){
+  let da=new Date(a),db=new Date(b),s=1;if(da>db){let t=da;da=db;db=t;s=-1;}
+  const fw=Math.floor(Math.round((db-da)/86400000)/7);let c=fw*5;
+  let d=new Date(da);d.setDate(d.getDate()+fw*7);
+  while(d<db){d.setDate(d.getDate()+1);if(d.getDay()&&d.getDay()<6)c++;}
+  for(let y=da.getFullYear();y<=db.getFullYear();y++)hols(y).forEach(h=>{const hd=new Date(h);if(hd>da&&hd<=db&&hd.getDay()&&hd.getDay()<6)c--;});
+  return s*c;
+}
+function sd(c){return c.addlDate?new Date(c.addlDate):new Date(c.date);}
+function idl(c){return addWD(sd(c),IDEAL);}
+function ddl(c){return addWD(sd(c),DL);}
+function isOD(c){return c.status!=='done'&&ddl(c)<new Date();}
+function dtl(c){return wdDiff(new Date(),ddl(c));}
+function dti(c){return wdDiff(new Date(),idl(c));}
+function fmt(d){if(!d)return'';return new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function fS(d){if(!d)return'';return new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});}
+function gMon(d){let dt=new Date(d),day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));dt.setHours(0,0,0,0);return dt;}
+function wk(d){return gMon(d).toISOString().slice(0,10);}
+function wkL(k){let d=new Date(k),e=new Date(k);e.setDate(e.getDate()+4);return fS(d)+' – '+fS(e);}
+function nWk(k){let d=new Date(k);d.setDate(d.getDate()+7);return d.toISOString().slice(0,10);}
+function pWk(k){let d=new Date(k);d.setDate(d.getDate()-7);return d.toISOString().slice(0,10);}
+function subThu(wkKey){const m=new Date(wkKey),th=new Date(m);th.setDate(m.getDate()+3);const s=new Date(th);s.setDate(th.getDate()-21);return s;}
+
+// Ближайший четверг от сегодня + 3 недели = первая возможная неделя отгрузки для З
+function nextPossibleWkZ(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const day=today.getDay();
+  // Ближайший четверг (если сегодня четверг — берём этот)
+  const daysToThu=day<=4?(4-day):(11-day);
+  const thu=new Date(today);thu.setDate(today.getDate()+daysToThu);
+  // +3 недели = дата отгрузки
+  const shipThu=new Date(thu);shipThu.setDate(thu.getDate()+21);
+  return wk(shipThu);
+}
+
+// Стартовые курсоры с учётом фабрики З
+function startCursors(){
+  const cur={};
+  Object.keys(FAB).forEach(f=>{
+    cur[f]=f==='З'?nextPossibleWkZ():wk(gMon(new Date()));
+  });
+  return cur;
+}
+
+// Добавить только новые — по приоритету, вытесняя менее срочных
+function addNewOnly(){
+  const newOnes=C.filter(c=>c.status!=='done'&&!c.shipmentWeek&&!c.inactive);
+  if(!newOnes.length){alert('Нет новых договоров для добавления');return;}
+
+  // Полная очередь — все незафиксированные + новые, отсортированные по приоритету
+  const allActive=C.filter(c=>c.status!=='done'&&!c.inactive&&!c.locked)
+    .sort((a,b)=>{const ao=isOD(a),bo=isOD(b);if(ao&&!bo)return-1;if(!ao&&bo)return 1;if(ao&&bo)return ddl(a)-ddl(b);return idl(a)-idl(b);});
+
+  // Сбрасываем shipmentWeek у незафиксированных
+  allActive.forEach(c=>{c.shipmentWeek='';});
+
+  // Считаем занятость только locked договоров
+  const occ={};
+  C.filter(c=>c.shipmentWeek&&c.locked&&c.status!=='done'&&!c.inactive).forEach(c=>{
+    if(!occ[c.shipmentWeek])occ[c.shipmentWeek]={};
+    if(!occ[c.shipmentWeek][c.fab])occ[c.shipmentWeek][c.fab]=0;
+    occ[c.shipmentWeek][c.fab]++;
+  });
+
+  // Расставляем по приоритету
+  const cur=startCursors();
+  allActive.forEach(c=>{
+    const f=c.fab,cap=FAB[f].t*FAB[f].n;
+    let placed=false,tries=0;
+    while(!placed&&tries<500){
+      const w=cur[f];
+      if(!occ[w])occ[w]={};if(!occ[w][f])occ[w][f]=0;
+      if(occ[w][f]<cap){occ[w][f]++;c.shipmentWeek=w;placed=true;}
+      else cur[f]=nWk(cur[f]);
+      tries++;
+    }
+  });
+  scheduleSave();renderAll();ss('ok',`Добавлено ${newOnes.length} новых договоров по приоритету`);
+}
+function buildSched(){
+  if(!confirm('Построить/пересобрать график?\nЗафиксированные (🔒) машины останутся.'))return;
+  // Сброс незафиксированных
+  C.forEach(c=>{if(c.status!=='done'&&!c.locked&&!c.inactive){c.shipmentWeek='';c.approved=null;}});
+  // Занятость locked
+  const occ={};
+  C.filter(c=>c.shipmentWeek&&c.locked&&c.status!=='done'&&!c.inactive).forEach(c=>{
+    if(!occ[c.shipmentWeek])occ[c.shipmentWeek]={};
+    if(!occ[c.shipmentWeek][c.fab])occ[c.shipmentWeek][c.fab]=0;
+    occ[c.shipmentWeek][c.fab]++;
+  });
+  // Очередь: просрочники → по idealDt
+  const q=C.filter(c=>c.status!=='done'&&!c.shipmentWeek&&!c.inactive)
+    .sort((a,b)=>{const ao=isOD(a),bo=isOD(b);if(ao&&!bo)return-1;if(!ao&&bo)return 1;if(ao&&bo)return ddl(a)-ddl(b);return idl(a)-idl(b);});
+  // Курсоры с учётом фабрики З (ближайший чт + 3 нед)
+  const cur=startCursors();
+  // Расставляем
+  q.forEach(c=>{
+    const f=c.fab,cap=FAB[f].t*FAB[f].n;
+    let placed=false,tries=0;
+    while(!placed&&tries<500){
+      const w=cur[f];
+      if(!occ[w])occ[w]={};if(!occ[w][f])occ[w][f]=0;
+      if(occ[w][f]<cap){occ[w][f]++;c.shipmentWeek=w;placed=true;}
+      else cur[f]=nWk(cur[f]);
+      tries++;
+    }
+  });
+  scheduleSave();renderAll();ss('ok',`Готово! Распределено ${q.length} договоров`);
+}
+
+// ── RENDER SCHEDULE (из contracts напрямую) ──
+function renderS(){
+  const fF=document.getElementById('sf').value;
+  // Группируем по неделям и фабрикам напрямую из C
+  const map={};
+  C.forEach(c=>{
+    if(!c.shipmentWeek||c.status==='done'||c.inactive)return;
+    if(fF&&c.fab!==fF)return;
+    const w=c.shipmentWeek,f=c.fab;
+    if(!map[w])map[w]={};
+    if(!map[w][f])map[w][f]=[];
+    map[w][f].push(c);
+  });
+  const weeks=Object.keys(map).sort();
+  if(!weeks.length){
+    document.getElementById('sched').innerHTML='<div class="card" style="text-align:center;color:var(--text2);padding:2rem">Нажмите «⚠ Построить / Пересобрать» для построения графика</div>';
+    return;
+  }
+  let html='',lastM='';
+  weeks.forEach(w=>{
+    const mL=new Date(w).toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+    if(mL!==lastM){html+=`<div class="mhdr">${mL}</div>`;lastM=mL;}
+    Object.keys(map[w]).sort().forEach(f=>{
+      const list=map[w][f],cfg=FAB[f],cap=cfg.t*cfg.n;
+      const isPast=new Date(w)<new Date(wk(new Date()));
+      // Бейдж подачи для З
+      let subB='';
+      if(f==='З'){
+        const sub=subThu(w),td=new Date();td.setHours(0,0,0,0);
+        subB=sub.toDateString()===td.toDateString()?`<span class="badge ba">Подать СЕГОДНЯ: ${fmt(sub)}</span>`:
+          sub<td?`<span class="badge br">Подача просрочена: ${fmt(sub)}</span>`:
+          `<span class="badge bp">Подать до: ${fmt(sub)} (чт)</span>`;
+      }
+      const allApp=list.every(c=>c.approved===true),anyDen=list.some(c=>c.approved===false);
+      html+=`<div class="ship" style="${isPast?'opacity:.75':''}">
+        <div class="shh">
+          <strong>Фабрика ${f} · ${wkL(w)}</strong>
+          ${isPast?'<span class="badge bgr">Прошедшая</span>':''}${subB}
+          <span class="badge ${list.length>cap?'br':'bt'}">${list.length}/${cap}</span>
+          ${allApp?'<span class="badge bg">Согласовано</span>':anyDen?'<span class="badge br">Есть срывы</span>':'<span class="badge ba">Ожидает</span>'}
+          ${!isPast?`<button class="btn sm" style="margin-left:auto;background:var(--gbg);color:var(--gtx);border-color:var(--gtx)" onclick="addTruckToWeek('${w}','${f}')">+ Добавить машину</button>`:''}
+        </div><div class="shb">`;
+      // Разбиваем на машины
+      const nT=Math.max(cfg.t,Math.ceil(list.length/cfg.n));
+      for(let ti=0;ti<nT;ti++){
+        const truck=list.slice(ti*cfg.n,(ti+1)*cfg.n),isOv=ti>=cfg.t;
+        const tIds=JSON.stringify(truck.map(c=>c.id));
+        const td=getTruckDate(w,f,ti);
+        html+=`<div class="trh">
+          <span>Машина ${ti+1}${isOv?' <span style="background:var(--rbg);color:var(--rtx);font-size:10px;padding:1px 6px;border-radius:10px">перегруз</span>':''}</span>
+          ${td?`<span class="badge bg">📅 ${fmt(new Date(td))}</span>`:''}
+          ${!isPast?`
+            <button class="btn sm" onclick='shiftT("${w}","${f}",${tIds},-1)'>◀ Раньше</button>
+            <button class="btn sm" onclick='shiftT("${w}","${f}",${tIds},1)'>Позже ▶</button>
+            <button class="btn sm" style="background:var(--bbg);color:var(--blue);border-color:var(--blue)" onclick="setTruckDate('${w}','${f}',${ti})">📅 Дата</button>
+            ${truck.some(c=>c.locked)?
+              `<button class="btn sm" style="background:var(--abg);color:var(--atx);border-color:var(--atx)" onclick='unlockT("${w}","${f}",${tIds})'>🔓 Снять</button>
+               <button class="btn sm btnp" onclick='lockT("${w}","${f}",${tIds})'>🔒 Подтвердить</button>`:
+              `<button class="btn sm btnp" onclick='lockT("${w}","${f}",${tIds})'>🔒 Подтвердить</button>`
+            }
+          `:''}
+        </div>`;
+        truck.forEach(c=>{
+          const shipD=new Date(w);shipD.setDate(shipD.getDate()+4);
+          const dAS=wdDiff(shipD,ddl(c));
+          const dStr=dAS<0?`<span style="color:var(--rtx);font-size:11px;margin-left:6px;font-weight:600">${Math.abs(dAS)} р.д. просрочка на дату отгрузки</span>`:
+            dAS===0?`<span style="color:var(--atx);font-size:11px;margin-left:6px">дедлайн в день отгрузки</span>`:
+            `<span style="color:var(--gtx);font-size:11px;margin-left:6px">${dAS} р.д. до дедлайна</span>`;
+          html+=`<div class="slot" style="${c.locked?'background:var(--gbg)':''}">
+            <div class="sn">
+              ${isOD(c)?'<span style="color:var(--rtx)">⚑ </span>':''}${c.locked?'<span style="color:var(--gtx);font-size:11px">🔒 </span>':''}
+              <strong>${c.name}</strong><span style="font-size:11px;color:var(--text2);margin-left:4px">${c.num}</span>
+              ${c.city?`<span style="font-size:11px;background:var(--bbg);color:var(--blue);padding:1px 6px;border-radius:10px;margin-left:4px">📍${c.city}</span>`:''}
+              ${dStr}
+            </div>
+            ${c.approved===true?'<span class="badge bg">✓</span>':c.approved===false?'<span class="badge br">Срыв</span>':''}
+            ${!isPast?`
+              <button class="btn sm" onclick="appC('${c.id}')">✓</button>
+              <button class="btn sm btnw" style="margin-left:3px" onclick="moveC('${c.id}','${w}')">→</button>
+              <button class="btn sm" style="margin-left:3px;background:var(--pbg);color:var(--pdark);border-color:var(--purple)" onclick="setCity('${c.id}')">📍</button>
+              <button class="btn sm" style="margin-left:3px;background:var(--bg2)" onclick="moveClient('${c.id}','${w}','${f}')">⇄</button>
+            `:''}
+          </div>`;
+        });
+        if(!isOv&&!isPast){for(let e=truck.length;e<cfg.n;e++)html+=`<div class="slot"><span class="sn" style="color:var(--text3);font-size:12px;font-style:italic">Свободное место</span><button class="btn sm btnp" onclick="addSlot('${w}','${f}')">+ Добавить в машину</button></div>`;}
+      }
+      if(!isPast)html+=`<div style="padding:6px 0;display:flex;align-items:center;gap:8px;border-top:0.5px solid var(--border);margin-top:4px"><span style="font-size:12px;color:var(--text2)">Добавить сверх нормы:</span><button class="btn sm btnw" onclick="overload('${w}','${f}')">↑ Перегруз</button></div>`;
+      html+=`</div></div>`;
+    });
+  });
+  document.getElementById('sched').innerHTML=html;
+}
+
+// ── SCHEDULE ACTIONS ──
+function appC(id){const c=C.find(x=>x.id===id);if(c){c.approved=true;scheduleSave();renderS();}}
+
+function moveC(id,fWk){
+  const c=C.find(x=>x.id===id),nw=nWk(fWk);
+  openM(`<div class="modal"><h3>Перенести: ${c.name}</h3>
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:12px;font-size:13px;font-weight:500">Куда перенести?</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;margin-bottom:14px;padding:10px;border:0.5px solid var(--border);border-radius:var(--r)">
+        <input type="radio" name="mv" value="next" checked style="width:auto;accent-color:var(--purple)">
+        <span>Следующая неделя<br><span style="font-size:12px;color:var(--text2)">${wkL(nw)}</span></span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:14px;padding:10px;border:0.5px solid var(--border);border-radius:var(--r)">
+        <input type="radio" name="mv" value="date" style="width:auto;margin-top:3px;accent-color:var(--purple)">
+        <div style="flex:1">
+          <span>Конкретная дата</span><br>
+          <input type="date" id="mvd" style="margin-top:6px;font-size:13px" onclick="document.querySelectorAll('input[name=mv]')[1].checked=true"/>
+        </div>
+      </label>
+    </div>
+    <div id="mve"></div>
+    <div class="mbt">
+      <button class="btn" onclick="closeM()">Отмена</button>
+      <button class="btn btnp" onclick="confMove('${id}','${fWk}','${nw}')">Перенести</button>
+    </div>
+  </div>`);
+}
+
+function confMove(id,fWk,defN){
+  const sel=document.querySelector('input[name="mv"]:checked').value;
+  let tw=defN;
+  if(sel==='date'){const dv=document.getElementById('mvd').value;if(!dv){document.getElementById('mve').innerHTML='<div class="errb">Укажите дату</div>';return;}tw=wk(new Date(dv));}
+  const c=C.find(x=>x.id===id);if(!c)return;
+  c.shipmentWeek=tw;c.approved=null;
+  closeM();scheduleSave();renderS();renderC();updateTB();
+  // Освободилось место — предложить заполнить
+  const freed=C.filter(x=>x.shipmentWeek===fWk&&x.fab===c.fab&&!x.inactive&&x.status!=='done').length;
+  if(freed<FAB[c.fab].t*FAB[c.fab].n)setTimeout(()=>sugFill(fWk,c.fab),300);
+}
+
+function shiftT(w,f,ids,dir){
+  const tw=dir===1?nWk(w):pWk(w);
+  if(dir===1){
+    openM(`<div class="modal">
+      <h3>Сместить машину · Фабрика ${f} · ${wkL(w)}</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <button class="btn btnp" id="mbtn1" style="text-align:left;padding:12px 16px;white-space:normal;line-height:1.4">
+          <div style="font-weight:600;font-size:14px">Сместить машину и весь дальнейший график</div>
+          <div style="font-size:12px;opacity:.85;margin-top:4px">Все незафиксированные машины фабрики ${f} с этой недели сдвинутся на неделю позже</div>
+        </button>
+        <button class="btn" id="mbtn2" style="text-align:left;padding:12px 16px;white-space:normal;line-height:1.4">
+          <div style="font-weight:600;font-size:14px">Перенести только эту машину</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Машина переносится на ${wkL(tw)}, остальные остаются на месте</div>
+        </button>
+      </div>
+      <div class="mbt"><button class="btn" onclick="closeM()">Отмена</button></div>
+    </div>`);
+    setTimeout(()=>{
+      const b1=document.getElementById('mbtn1');
+      const b2=document.getElementById('mbtn2');
+      if(b1)b1.onclick=()=>{closeM();shiftAllFab(w,f,ids);};
+      if(b2)b2.onclick=()=>{closeM();addExtraTruck(w,f,ids);};
+    },30);
+  }else{
+    const cap=FAB[f].t*FAB[f].n;
+    const inT=C.filter(c=>c.shipmentWeek===tw&&c.fab===f&&!c.inactive&&c.status!=='done').length;
+    if(cap-inT<ids.length&&!confirm(`В неделе ${wkL(tw)} занято ${inT}/${cap} мест.\nДобавить как перегруз?`))return;
+    ids.forEach(id=>{const c=C.find(x=>x.id===id);if(c){c.shipmentWeek=tw;c.approved=null;}});
+    scheduleSave();renderAll();
+  }
+}
+
+// Сместить машину + весь дальнейший график фабрики на неделю вперёд
+function shiftAllFab(w,f,ids){
+  // Находим все незафиксированные машины этой фабрики начиная с данной недели
+  // и сдвигаем их все на неделю вперёд
+  const toShift=C.filter(c=>
+    c.fab===f&&
+    c.status!=='done'&&
+    !c.inactive&&
+    !c.locked&&
+    c.shipmentWeek>=w
+  );
+  toShift.forEach(c=>{c.shipmentWeek=nWk(c.shipmentWeek);c.approved=null;});
+  scheduleSave();renderAll();
+}
+
+// Добавить машину на следующей неделе (только эта машина двигается)
+function addExtraTruck(w,f,ids){
+  const tw=nWk(w);
+  ids.forEach(id=>{const c=C.find(x=>x.id===id);if(c){c.shipmentWeek=tw;c.approved=null;}});
+  scheduleSave();renderAll();
+}
+
+function lockT(w,f,ids){ids.forEach(id=>{const c=C.find(x=>x.id===id);if(c)c.locked=true;});scheduleSave();renderS();}
+function unlockT(w,f,ids){ids.forEach(id=>{const c=C.find(x=>x.id===id);if(c)c.locked=false;});scheduleSave();renderS();}
+
+// Перенести клиента в другую машину (в рамках одной фабрики)
+function moveClient(id,fromW,fromF){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  // Строим список всех доступных слотов этой фабрики
+  const map={};
+  C.filter(x=>x.shipmentWeek&&x.status!=='done'&&!x.inactive&&x.fab===fromF&&x.id!==id)
+    .forEach(x=>{if(!map[x.shipmentWeek])map[x.shipmentWeek]=0;map[x.shipmentWeek]++;});
+  const cap=FAB[fromF].t*FAB[fromF].n;
+  const weeks=Object.keys(map).sort().concat(
+    Object.keys(map).includes(fromW)?[]:[fromW]
+  ).filter((v,i,a)=>a.indexOf(v)===i).sort();
+  // Показываем недели куда можно переместить
+  const wOpts=weeks.map(wk2=>
+    `<div class="pri" onclick="doMoveClient('${id}','${wk2}','${fromF}')">
+      <div style="flex:1"><strong>${wkL(wk2)}</strong> <span style="font-size:12px;color:var(--text2)">Фабрика ${fromF}</span></div>
+      <div style="font-size:12px;color:var(--text2)">${map[wk2]||0}/${cap} мест</div>
+    </div>`
+  ).join('');
+  openM(`<div class="modal"><h3>Переместить: ${c.name}</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Выберите неделю для перемещения</div>
+    <div style="max-height:50vh;overflow-y:auto">${wOpts||'<div style="color:var(--text2);text-align:center;padding:1rem">Нет других недель</div>'}</div>
+    <div class="mbt"><button class="btn" onclick="closeM()">Отмена</button></div>
+  </div>`);
+}
+
+function doMoveClient(id,toW,toF){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  c.shipmentWeek=toW;c.fab=toF;c.approved=null;
+  closeM();scheduleSave();renderS();renderC();updateTB();
+}
+
+// Город напротив фамилии — редактирование инлайн
+function setCity(id){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  openM(`<div class="modal"><h3>Город: ${c.name}</h3>
+    <div style="margin-bottom:12px"><label>Город доставки</label><input id="city-inp" value="${c.city||''}" placeholder="Минск"/></div>
+    <div class="mbt">
+      <button class="btn" onclick="closeM()">Отмена</button>
+      <button class="btn btnp" onclick="saveCity('${id}')">Сохранить</button>
+    </div>
+  </div>`);
+}
+function saveCity(id){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  c.city=document.getElementById('city-inp').value.trim();
+  closeM();scheduleSave();renderS();
+}
+
+// Точная дата напротив машины
+function setTruckDate(w,f,ti){
+  const key=`${w}|${f}|${ti}`;
+  // Храним даты машин в отдельном поле на первом договоре машины или в localStorage
+  const current=localStorage.getItem('truckDate_'+key)||'';
+  openM(`<div class="modal"><h3>Точная дата машины</h3>
+    <div style="margin-bottom:4px;font-size:13px;color:var(--text2)">Фабрика ${f} · ${wkL(w)} · Машина ${ti+1}</div>
+    <div style="margin-bottom:12px"><label>Точная дата прибытия</label><input type="date" id="td-inp" value="${current}"/></div>
+    <div class="mbt">
+      <button class="btn" onclick="closeM()">Отмена</button>
+      <button class="btn btnp" onclick="saveTruckDate('${key}')">Сохранить</button>
+    </div>
+  </div>`);
+}
+function saveTruckDate(key){
+  const v=document.getElementById('td-inp').value;
+  if(v)localStorage.setItem('truckDate_'+key,v);
+  else localStorage.removeItem('truckDate_'+key);
+  closeM();renderS();if(document.getElementById('page-week').classList.contains('active'))renderW();
+}
+function getTruckDate(w,f,ti){return localStorage.getItem('truckDate_'+`${w}|${f}|${ti}`)||'';}
+
+// ── ВКЛАДКА НЕДЕЛЯ ──
+function renderW(){
+  const sel=document.getElementById('wk-sel').value;
+  const tw=wk(new Date());
+  const w=sel==='cur'?tw:nWk(tw);
+  // Собираем все машины этой недели по всем фабрикам
+  const map={};
+  C.forEach(c=>{
+    if(!c.shipmentWeek||c.status==='done'||c.inactive||c.shipmentWeek!==w)return;
+    const f=c.fab;
+    if(!map[f])map[f]=[];
+    map[f].push(c);
+  });
+  if(!Object.keys(map).length){
+    document.getElementById('week-content').innerHTML='<div class="card" style="text-align:center;color:var(--text2);padding:2rem">На эту неделю машин нет</div>';
+    return;
+  }
+  let html='';
+  Object.keys(FAB).forEach(f=>{
+    if(!map[f]||!map[f].length)return;
+    const list=map[f],cfg=FAB[f],cap=cfg.t*cfg.n;
+    const nT=Math.max(cfg.t,Math.ceil(list.length/cfg.n));
+    html+=`<div class="ship">
+      <div class="shh">
+        <strong>Фабрика ${f} · ${wkL(w)}</strong>
+        <span class="badge ${list.length>cap?'br':'bt'}">${list.length}/${cap}</span>
+      </div><div class="shb">`;
+    for(let ti=0;ti<nT;ti++){
+      const truck=list.slice(ti*cfg.n,(ti+1)*cfg.n),isOv=ti>=cfg.t;
+      const td=getTruckDate(w,f,ti);
+      html+=`<div class="trh">
+        <span>Машина ${ti+1}${isOv?' <span style="background:var(--rbg);color:var(--rtx);font-size:10px;padding:1px 6px;border-radius:10px">перегруз</span>':''}</span>
+        ${td?`<span class="badge bg" style="margin-left:6px">📅 ${fmt(new Date(td))}</span>`:''}
+        <button class="btn sm" style="background:var(--bbg);color:var(--blue);border-color:var(--blue)" onclick="setTruckDate('${w}','${f}',${ti})">📅 Дата машины</button>
+      </div>`;
+      truck.forEach(c=>{
+        html+=`<div class="slot">
+          <div class="sn">
+            ${isOD(c)?'<span style="color:var(--rtx)">⚑ </span>':''}
+            <strong>${c.name}</strong>
+            <span style="font-size:11px;color:var(--text2);margin-left:4px">${c.num}</span>
+            ${c.city?`<span style="font-size:11px;background:var(--bbg);color:var(--blue);padding:1px 7px;border-radius:10px;margin-left:6px">📍${c.city}</span>`:''}
+          </div>
+          <button class="btn sm" style="background:var(--bg2)" onclick="setCity('${c.id}')">📍 Город</button>
+          <button class="btn sm" style="background:var(--pbg);color:var(--pdark);border-color:var(--purple);margin-left:3px" onclick="moveAny('${c.id}','${w}')">⇄ Переместить</button>
+          ${c.approved===true?'<span class="badge bg">✓</span>':''}
+        </div>`;
+      });
+    }
+    html+=`</div></div>`;
+  });
+  document.getElementById('week-content').innerHTML=html;
+}
+
+// Переместить клиента в любую машину любой фабрики (только из вкладки Неделя)
+function moveAny(id,w){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  // Все доступные машины этой недели по всем фабрикам
+  const slots=[];
+  Object.keys(FAB).forEach(f=>{
+    const cfg=FAB[f],cap=cfg.t*cfg.n;
+    const inWk=C.filter(x=>x.shipmentWeek===w&&x.fab===f&&!x.inactive&&x.status!=='done'&&x.id!==id).length;
+    const nT=Math.max(cfg.t,Math.ceil((inWk+1)/cfg.n));
+    for(let ti=0;ti<nT+1;ti++){
+      const inTruck=C.filter(x=>x.shipmentWeek===w&&x.fab===f&&!x.inactive&&x.status!=='done'&&x.id!==id).slice(ti*cfg.n,(ti+1)*cfg.n).length;
+      if(inTruck<cfg.n||ti>=cfg.t){
+        slots.push({f,ti,inWk,cap});break;
+      }
+    }
+    // Упрощённо — показываем фабрику как вариант
+  });
+  const fabOpts=Object.keys(FAB).map(f=>{
+    const cfg=FAB[f],inWk=C.filter(x=>x.shipmentWeek===w&&x.fab===f&&!x.inactive&&x.status!=='done'&&x.id!==id).length;
+    return`<div class="pri" onclick="doMoveClient('${id}','${w}','${f}')">
+      <div style="flex:1"><strong>Фабрика ${f}</strong> <span style="font-size:12px;color:var(--text2)">${wkL(w)}</span></div>
+      <div style="font-size:12px;color:var(--text2)">${inWk}/${cfg.t*cfg.n} мест</div>
+    </div>`;
+  }).join('');
+  openM(`<div class="modal"><h3>Переместить: ${c.name}</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Выберите фабрику для перемещения (неделя ${wkL(w)})</div>
+    ${fabOpts}
+    <div class="mbt"><button class="btn" onclick="closeM()">Отмена</button></div>
+  </div>`);
+}
+function overload(w,f){sugFill(w,f);}
+
+// Добавить новую машину в неделю — показывает список для заполнения
+function addTruckToWeek(w,f){
+  const cands=C.filter(c=>c.status!=='done'&&!c.shipmentWeek&&!c.inactive&&c.fab===f)
+    .sort((a,b)=>{if(isOD(a)&&!isOD(b))return-1;if(!isOD(a)&&isOD(b))return 1;return idl(a)-idl(b);});
+  const cfg=FAB[f];
+  const inWk=C.filter(c=>c.shipmentWeek===w&&c.fab===f&&!c.inactive&&c.status!=='done').length;
+  const items=cands.map(c=>`<div class="pri" onclick="addToWk('${c.id}','${w}','${f}')">
+    <div style="flex:1">
+      <strong>${c.name}</strong>
+      <span style="font-size:11px;color:var(--text2);margin-left:6px">${c.num}</span>
+      ${isOD(c)?'<span class="badge br" style="margin-left:6px;font-size:10px">Просрочка</span>':''}
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-align:right;white-space:nowrap">Идеал: ${fS(idl(c))}<br>Дедлайн: ${fS(ddl(c))}</div>
+  </div>`).join('');
+  openM(`<div class="modal" style="max-width:500px">
+    <h3>+ Добавить машину · ${wkL(w)} · Фабрика ${f}</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Сейчас в этой неделе: ${inWk} клиентов. Стандарт: ${cfg.t} маш. × ${cfg.n} мест = ${cfg.t*cfg.n}. Добавляете сверх нормы.</div>
+    <div style="max-height:60vh;overflow-y:auto;margin:0 -4px;padding:0 4px">
+      ${items||'<div style="text-align:center;padding:1rem;color:var(--text2)">Нет клиентов в ожидании</div>'}
+    </div>
+    <div class="mbt"><button class="btn" onclick="closeM()">Закрыть</button></div>
+  </div>`);
+}
+
+function sugFill(w,f){
+  const cands=C.filter(c=>c.status!=='done'&&!c.shipmentWeek&&!c.inactive&&c.fab===f)
+    .sort((a,b)=>{if(isOD(a)&&!isOD(b))return-1;if(!isOD(a)&&isOD(b))return 1;return idl(a)-idl(b);});
+  const items=cands.map(c=>`<div class="pri" onclick="addToWk('${c.id}','${w}','${f}')">
+    <div style="flex:1">
+      <strong>${c.name}</strong>
+      <span style="font-size:11px;color:var(--text2);margin-left:6px">${c.num}</span>
+      ${isOD(c)?'<span class="badge br" style="margin-left:6px;font-size:10px">Просрочка</span>':''}
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-align:right;white-space:nowrap">Идеал: ${fS(idl(c))}<br>Дедлайн: ${fS(ddl(c))}</div>
+  </div>`).join('');
+  openM(`<div class="modal" style="max-width:500px">
+    <h3>Добавить в машину · ${wkL(w)} · Фабрика ${f}</h3>
+    <div style="max-height:60vh;overflow-y:auto;margin:0 -4px;padding:0 4px">
+      ${items||'<div style="text-align:center;padding:1rem;color:var(--text2)">Нет клиентов в ожидании</div>'}
+    </div>
+    <div class="mbt"><button class="btn" onclick="closeM()">Закрыть</button></div>
+  </div>`);
+}
+
+function addToWk(id,w,f){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  c.shipmentWeek=w;c.approved=null;
+  closeM();scheduleSave();renderS();renderC();updateTB();
+}
+
+// ── ADD CONTRACT ──
+function togAdd(){document.getElementById('addw').style.display=document.getElementById('fadd').value==='y'?'':'none';updPrev();}
+function updPrev(){
+  const dv=document.getElementById('fd').value,av=document.getElementById('fadd').value,a2=document.getElementById('fadd2').value;
+  const sv=(av==='y'&&a2)?a2:dv;const box=document.getElementById('prev');if(!sv){box.innerHTML='';return;}
+  const s=new Date(sv),id2=addWD(s,IDEAL),dl=addWD(s,DL),now=new Date();now.setHours(0,0,0,0);
+  const od=dl<now;
+  box.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="background:var(--bg2);border-radius:var(--r);padding:8px 14px"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Идеал (70 р.д.)</div><strong>${fmt(id2)}</strong></div>
+    <div style="background:${od?'var(--rbg)':'var(--bg2)'};border-radius:var(--r);padding:8px 14px"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Дедлайн (90 р.д.)</div><strong style="color:${od?'var(--rtx)':'var(--text)'}">${fmt(dl)}</strong></div>
+    ${od?`<div style="background:var(--rbg);border:1px solid #F09595;border-radius:var(--r);padding:8px 14px;color:var(--rtx);font-weight:600">⚑ Просрочка: ${wdDiff(dl,now)} р.д.</div>`:
+    `<div style="background:var(--bg2);border-radius:var(--r);padding:8px 14px"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">До дедлайна</div><strong>${Math.abs(wdDiff(now,dl))} р.д.</strong></div>`}
+  </div>`;
+}
+
+function addC(){
+  const name=document.getElementById('fn').value.trim(),num=document.getElementById('fnum').value.trim();
+  const fab=document.getElementById('ffab').value,date=document.getElementById('fd').value;
+  const add=document.getElementById('fadd').value,aDate=document.getElementById('fadd2').value;
+  const note=document.getElementById('fnote').value.trim(),err=document.getElementById('cerr');
+  if(!name||!num||!date){err.innerHTML='<div class="errb">Заполните фамилию, номер и дату</div>';return;}
+  if(add==='y'&&!aDate){err.innerHTML='<div class="errb">Укажите дату доп. соглашения</div>';return;}
+  err.innerHTML='';
+  C.push({id:'c'+Date.now()+Math.random().toString(36).slice(2,5),name,num,fab,date,addlDate:add==='y'?aDate:'',note,city:'',exactDate:'',status:'pending',shipmentWeek:'',locked:false,inactive:false,approved:null});
+  scheduleSave();renderAll();
+  ['fn','fnum','fd','fnote','fadd2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fadd').value='';document.getElementById('addw').style.display='none';document.getElementById('prev').innerHTML='';
+}
+
+// ── RENDER CONTRACTS ──
+function sbadge(c){
+  if(c.status==='done')return'<span class="badge bg">Отгружен</span>';
+  if(isOD(c))return'<span class="badge br">Просрочка</span>';
+  if(c.shipmentWeek)return'<span class="badge bb">В графике</span>';
+  if(dti(c)<=10)return'<span class="badge ba">Идеал скоро</span>';
+  return'<span class="badge bgr">Ожидание</span>';
+}
+function renderC(){
+  const fF=document.getElementById('ff').value,sF=document.getElementById('fst').value;
+  let list=C.filter(c=>{
+    if(c.inactive)return false;if(fF&&c.fab!==fF)return false;
+    if(sF==='overdue'&&!isOD(c))return false;if(sF==='pending'&&(c.shipmentWeek||c.status==='done'))return false;
+    if(sF==='scheduled'&&(!c.shipmentWeek||c.status==='done'))return false;if(sF==='done'&&c.status!=='done')return false;
+    return true;
+  }).sort((a,b)=>{const ao=isOD(a),bo=isOD(b);if(ao&&!bo)return-1;if(!ao&&bo)return 1;if(ao&&bo)return ddl(a)-ddl(b);return idl(a)-idl(b);});
+  if(!list.length){document.getElementById('ctbl').innerHTML='<div style="text-align:center;padding:2rem;color:var(--text2)">Нет договоров</div>';return;}
+  const rows=list.map(c=>{
+    const dl=dtl(c),dlS=c.status==='done'?'—':isOD(c)?`<span style="color:var(--rtx);font-weight:500">${Math.abs(dl)} р.д. просрочка</span>`:`${dl} р.д.`;
+    return`<tr>
+      <td><strong>${c.name}</strong><br><span style="font-size:11px;color:var(--text2)">${c.num}</span></td>
+      <td><span class="badge bb">${c.fab}</span></td>
+      <td style="font-size:12px">${fmt(new Date(c.date))}${c.addlDate?'<br><span style="color:var(--text2)">Доп: '+fmt(new Date(c.addlDate))+'</span>':''}</td>
+      <td style="font-size:12px">${fmt(idl(c))}</td><td style="font-size:12px">${fmt(ddl(c))}</td>
+      <td style="font-size:12px">${dlS}</td><td>${sbadge(c)}</td>
+      <td style="font-size:12px">${c.shipmentWeek?wkL(c.shipmentWeek):'—'}</td>
+      <td style="white-space:nowrap">
+        ${c.status!=='done'?`<button class="btn sm" onclick="mkDone('${c.id}')">✓</button>`:`<button class="btn sm" onclick="unDone('${c.id}')">↩</button>`}
+        <button class="btn sm" style="margin-left:3px;background:var(--pbg);color:var(--pdark);border-color:var(--purple)" onclick="editC('${c.id}')">✎</button>
+        <button class="btn sm" style="margin-left:3px;background:var(--bg3);color:var(--text2);border-color:var(--border2)" onclick="setInact('${c.id}')" title="Не в работе">⏸</button>
+        <button class="btn sm btnd" style="margin-left:3px" onclick="delC('${c.id}')">✕</button>
+      </td></tr>`;
+  }).join('');
+  document.getElementById('ctbl').innerHTML=`<div style="overflow-x:auto"><table><thead><tr><th>Клиент</th><th>Фаб.</th><th>Дата</th><th>Идеал</th><th>Дедлайн</th><th>До дедлайна</th><th>Статус</th><th>Отгрузка</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function mkDone(id){const c=C.find(x=>x.id===id);if(!c)return;c.status='done';c.shipmentWeek='';c.locked=false;scheduleSave();renderAll();}
+function unDone(id){const c=C.find(x=>x.id===id);if(!c)return;c.status='pending';scheduleSave();renderAll();}
+function delC(id){if(!confirm('Удалить?'))return;C=C.filter(x=>x.id!==id);scheduleSave();renderAll();}
+function setInact(id){const c=C.find(x=>x.id===id);if(!c)return;c.inactive=true;c.shipmentWeek='';c.locked=false;scheduleSave();renderAll();}
+function setAct(id){const c=C.find(x=>x.id===id);if(!c)return;c.inactive=false;scheduleSave();renderAll();}
+
+function editC(id){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  openM(`<div class="modal"><h3>Редактировать договор</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><label>Фамилия И.О.</label><input id="en" value="${c.name}"/></div>
+      <div><label>№ договора</label><input id="enu" value="${c.num}"/></div>
+      <div><label>Фабрика</label><select id="efab"><option ${c.fab==='М'?'selected':''}>М</option><option ${c.fab==='З'?'selected':''}>З</option><option ${c.fab==='СП'?'selected':''}>СП</option></select></div>
+      <div><label>Дата договора</label><input type="date" id="ed" value="${c.date}"/></div>
+      <div><label>Доп. соглашение</label><select id="eadd" onchange="document.getElementById('eaw').style.display=this.value==='y'?'':'none'"><option value="" ${!c.addlDate?'selected':''}>Нет</option><option value="y" ${c.addlDate?'selected':''}>Есть</option></select></div>
+      <div id="eaw" style="display:${c.addlDate?'':'none'}"><label>Дата доп. соглашения</label><input type="date" id="ea2" value="${c.addlDate||''}"/></div>
+      <div><label>Примечание</label><input id="eno" value="${c.note||''}"/></div>
+    </div>
+    <div id="ee" style="margin-top:8px"></div>
+    <div class="mbt"><button class="btn" onclick="closeM()">Отмена</button><button class="btn btnp" onclick="saveC('${id}')">Сохранить</button></div>
+  </div>`);
+}
+function saveC(id){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  const name=document.getElementById('en').value.trim(),num=document.getElementById('enu').value.trim(),date=document.getElementById('ed').value;
+  if(!name||!num||!date){document.getElementById('ee').innerHTML='<div class="errb">Заполните поля</div>';return;}
+  const add=document.getElementById('eadd').value;
+  c.name=name;c.num=num;c.fab=document.getElementById('efab').value;c.date=date;
+  c.addlDate=add==='y'?(document.getElementById('ea2').value||''):'';c.note=document.getElementById('eno').value.trim();
+  closeM();scheduleSave();renderAll();
+}
+
+// ── INACTIVE ──
+function renderI(){
+  const list=C.filter(c=>c.inactive).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('tab-inact').textContent='Не в работе'+(list.length?` (${list.length})`:'');
+  document.getElementById('itbl').innerHTML=list.length?`<div style="overflow-x:auto"><table><thead><tr><th>Клиент</th><th>Фаб.</th><th>Дата</th><th>Примечание</th><th></th></tr></thead><tbody>${
+    list.map(c=>`<tr>
+      <td><strong>${c.name}</strong><br><span style="font-size:11px;color:var(--text2)">${c.num}</span></td>
+      <td><span class="badge bb">${c.fab}</span></td>
+      <td style="font-size:12px">${fmt(new Date(c.date))}${c.addlDate?'<br><span style="color:var(--text2)">Доп: '+fmt(new Date(c.addlDate))+'</span>':''}</td>
+      <td style="font-size:12px">${c.note||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm btnp" onclick="setAct('${c.id}')">▶ В работу</button>
+        <button class="btn sm" style="margin-left:3px;background:var(--pbg);color:var(--pdark);border-color:var(--purple)" onclick="editC('${c.id}')">✎</button>
+        <button class="btn sm btnd" style="margin-left:3px" onclick="delC('${c.id}')">✕</button>
+      </td></tr>`).join('')
+  }</tbody></table></div>`:'<div style="text-align:center;padding:2rem;color:var(--text2)">Нет договоров «Не в работе»</div>';
+}
+
+// ── ANALYTICS ──
+function renderA(){
+  const tot=C.length,od=C.filter(c=>c.status!=='done'&&isOD(c)).length,sch=C.filter(c=>c.status!=='done'&&c.shipmentWeek).length,dn=C.filter(c=>c.status==='done').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="sv">${tot}</div><div class="sl">Всего</div></div>
+    <div class="stat"><div class="sv" style="color:var(--rtx)">${od}</div><div class="sl">Просрочки</div></div>
+    <div class="stat"><div class="sv" style="color:var(--blue)">${sch}</div><div class="sl">В графике</div></div>
+    <div class="stat"><div class="sv" style="color:var(--gtx)">${dn}</div><div class="sl">Отгружены</div></div>`;
+  const odL=C.filter(c=>c.status!=='done'&&isOD(c)).sort((a,b)=>ddl(a)-ddl(b));
+  document.getElementById('odlist').innerHTML=`<div class="stit" style="color:var(--rtx)">Просрочки (${odL.length})</div>`+
+    (odL.length?odL.map(c=>`<div style="padding:7px 0;border-bottom:0.5px solid var(--border)"><strong>${c.name}</strong> <span style="font-size:11px;color:var(--text2)">${c.num} · Фаб. ${c.fab}</span><br>
+      <span style="font-size:12px;color:var(--rtx)">${Math.abs(dtl(c))} р.д. просрочка</span>
+      ${c.shipmentWeek?`<span style="font-size:11px;color:var(--blue);margin-left:6px">В графике: ${wkL(c.shipmentWeek)}</span>`:'<span style="font-size:11px;color:var(--amber);margin-left:6px">Не в графике!</span>'}
+    </div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px 0">Просрочек нет ✓</div>');
+  document.getElementById('fabsum').innerHTML=`<div class="stit">По фабрикам</div>`+Object.keys(FAB).map(f=>{
+    const cfg=FAB[f],t=C.filter(c=>c.fab===f);
+    const od2=t.filter(c=>c.status!=='done'&&isOD(c)).length,sc=t.filter(c=>c.status!=='done'&&c.shipmentWeek).length,dn2=t.filter(c=>c.status==='done').length;
+    return`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><strong>Фабрика ${f}</strong><span style="font-size:11px;color:var(--text2)">${cfg.t} маш. × ${cfg.n}${f==='З'?' · заявка за 3 нед.':''}</span></div>
+    Всего: ${t.length} · <span style="color:var(--rtx)">Просрочки: ${od2}</span> · <span style="color:var(--blue)">В графике: ${sc}</span> · <span style="color:var(--gtx)">Отгружены: ${dn2}</span></div>`;
+  }).join('');
+  const tw=wk(new Date()),nw2=nWk(tw);
+  document.getElementById('upc').innerHTML=`<div class="stit">Ближайшие отгрузки</div><div style="display:flex;gap:16px">${[tw,nw2].map(w=>{
+    let t2=0;const fb=[];Object.keys(FAB).forEach(f=>{const n=C.filter(c=>c.shipmentWeek===w&&c.fab===f&&!c.inactive&&c.status!=='done').length;t2+=n;if(n)fb.push(`${f}: ${n}`);});
+    return`<div style="flex:1"><div style="font-size:12px;color:var(--text2);margin-bottom:3px">${w===tw?'Эта неделя':'Следующая'} (${wkL(w)})</div><div style="font-size:20px;font-weight:600">${t2}</div>${fb.length?`<div style="font-size:11px;color:var(--text2)">${fb.join(' · ')}</div>`:''}</div>`;
+  }).join('<div style="width:0.5px;background:var(--border)"></div>')}</div>`;
+}
+
+function updateTB(){
+  const od=C.filter(c=>c.status!=='done'&&!c.inactive&&isOD(c));
+  const to=document.getElementById('tb-od'),tn2=document.getElementById('tb-nr');if(!to)return;
+  if(od.length){to.style.display='';document.getElementById('tb-od-v').textContent=od.length+' ('+Math.max(...od.map(c=>Math.abs(dtl(c))))+' р.д. макс)';}else to.style.display='none';
+  const p=C.filter(c=>c.status!=='done'&&!c.inactive&&!isOD(c)).sort((a,b)=>ddl(a)-ddl(b));
+  if(p.length){tn2.style.display='';document.getElementById('tb-nr-v').textContent=fmt(ddl(p[0]))+' · '+p[0].name;}else tn2.style.display='none';
+}
+
+// ── MODAL ──
+function openM(h){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()">${h}</div>`;}
+function closeM(){document.getElementById('modal').innerHTML='';}
+
+// ── BACKUP ──
+function exportB(){
+  // Считаем статистику для подтверждения
+  const confirmed=C.filter(c=>c.approved===true).length;
+  const locked=C.filter(c=>c.locked).length;
+  const scheduled=C.filter(c=>c.shipmentWeek&&c.status!=='done').length;
+  const data={contracts:C,savedAt:new Date().toISOString(),stats:{total:C.length,scheduled,confirmed,locked}};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  const dt=new Date();
+  const name=`otgruzki_backup_${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}.json`;
+  a.href=URL.createObjectURL(b);a.download=name;a.click();
+  ss('ok',`Бэкап сохранён: ${C.length} договоров, ${scheduled} в графике, ${confirmed} согласовано, ${locked} зафиксировано`);
+}
+function importB(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!Array.isArray(d.contracts)){alert('Неверный формат');return;}
+      if(!confirm(`Восстановить ${d.contracts.length} договоров?`))return;
+      C=d.contracts;scheduleSave();renderAll();alert('Восстановлено!');
+    }catch(e){alert('Ошибка: '+e.message);}
+  };
+  r.readAsText(file);ev.target.value='';
+}
+
+// ── PAGES ──
+function renderAll(){renderC();renderS();renderA();renderI();updateTB();}
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  ['contracts','schedule','week','analytics','inactive'].forEach((nm,i)=>{if(nm===n)document.querySelectorAll('.tab')[i].classList.add('active');});
+  if(n==='week')renderW();
+}
+
+// ── EXPOSE ──
+const G={loadData,buildSched,addNewOnly,renderS,renderW,appC,moveC,confMove,shiftT,shiftAllFab,addExtraTruck,lockT,unlockT,addSlot,addTruckToWeek,overload,addToWk,moveClient,doMoveClient,moveAny,setCity,saveCity,setTruckDate,saveTruckDate,addC,togAdd,updPrev,renderC,mkDone,unDone,delC,setInact,setAct,editC,saveC,exportB,importB,showPage,closeM};
+Object.entries(G).forEach(([k,v])=>window[k]=v);
+
+loadData();
+</script>
+</body>
+</html>
